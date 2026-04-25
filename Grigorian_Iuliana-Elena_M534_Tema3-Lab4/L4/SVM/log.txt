@@ -1,0 +1,5 @@
+[Median] START - N=800 dim=2
+[Median] countA=218 countB=582
+[Median] w calculat, bias=-246706.2
+[Median] showOutputData DONE
+[Median] DONE
