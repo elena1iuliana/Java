@@ -1,0 +1,6 @@
+svm\gui\Slider.java:100: warning: [removal] stop() in Thread has been deprecated and marked for removal
+    public void stop() {if(t != null){ t.stop(); t = null;}}	
+                                        ^
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+1 warning
