@@ -1,0 +1,39 @@
+sport-alimentatie-app/
+├── backend/                  ← Express.js + MongoDB (API-ul)
+│   ├── config/
+│   │   └── db.js
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Recipe.js
+│   │   ├── Workout.js
+│   │   └── Goal.js
+│   ├── routes/
+│   │   ├── recipes.js
+│   │   ├── workouts.js
+│   │   ├── users.js
+│   │   └── auth.js
+│   ├── controllers/
+│   ├── middleware/
+│   ├── .env
+│   ├── server.js
+│   └── package.json
+│
+├── frontend/                 ← PHP (interfața web)
+│   ├── assets/
+│   │   ├── css/
+│   │   └── js/
+│   ├── includes/
+│   │   ├── header.php
+│   │   └── footer.php
+│   ├── pages/
+│   │   ├── index.php
+│   │   ├── recipes.php
+│   │   ├── workouts.php
+│   │   ├── profile.php
+│   │   └── login.php
+│   ├── api/                  ← aici apelezi API-ul Express
+│   │   └── call_api.php      ← funcție helper cu cURL
+│   └── config.php            ← URL-ul API-ului (ex: http://localhost:3000)
+│
+├── README.md
+└── .gitignore
