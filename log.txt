@@ -1,0 +1,156 @@
+<?php
+$pdo = new PDO("mysql:host=db;dbname=istorie_db", "root", "root");
+$id = $_GET['id'];
+$error = "";
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    try {
+        $stmt = $pdo->prepare("CALL sp_EditeazaDomnitor(?, ?, ?, ?, ?)");
+        $stmt->execute([$id, $_POST['nume'], $_POST['poza'], $_POST['an_inceput'], $_POST['an_sfarsit']]);
+        header("Location: index.php");
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
+
+$stmt = $pdo->prepare("SELECT * FROM domnitori WHERE id = ?");
+$stmt->execute([$id]);
+$d = $stmt->fetch();
+?>
+
+<!DOCTYPE html>
+<html>
+<head><title>Editare</title></head>
+<body>
+    <h2>Editare Domnitor</h2>
+    <?php if($error) echo "<p style='color:red'>$error</p>"; ?>
+    <form method="POST">
+        Nume: <input type="text" name="nume" value="<?= $d['nume'] ?>"><br>
+        URL Poza: <input type="text" name="poza" value="<?= $d['poza'] ?>"><br>
+        Inceput: <input type="number" name="an_inceput" value="<?= $d['an_inceput'] ?>"><br>
+        Sfarsit: <input type="number" name="an_sfarsit" value="<?= $d['an_sfarsit'] ?>"><br>
+        <button type="submit">Salveaza</button>
+        <a href="index.php">Anuleaza</a>
+    </form>
+</body>
+</html>   edit.php
+
+
+<?php
+$pdo = new PDO("mysql:host=db;dbname=istorie_db", "root", "root");
+
+if (isset($_GET['delete'])) {
+    $stmt = $pdo->prepare("CALL sp_StergeDomnitor(?)");
+    $stmt->execute([$_GET['delete']]);
+    header("Location: index.php");
+}
+
+$domnitori = $pdo->query("SELECT * FROM domnitori")->fetchAll(PDO::FETCH_ASSOC);
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Domnitori</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Lista Domnitori</h1>
+    <table>
+        <tr>
+            <th>Poza</th>
+            <th>Nume</th>
+            <th>Ani</th>
+            <th>Actiuni</th>
+        </tr>
+        <?php foreach ($domnitori as $d): ?>
+        <tr>
+            <td><img src="<?= $d['poza'] ?>" width="50"></td>
+            <td><?= $d['nume'] ?></td>
+            <td><?= $d['an_inceput'] ?> - <?= $d['an_sfarsit'] ?></td>
+            <td>
+                <a href="edit.php?id=<?= $d['id'] ?>">Editeaza</a>
+                <a href="index.php?delete=<?= $d['id'] ?>" onclick="return confirm('Sigur?')">Sterge</a>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+    </table>
+</body>
+</html>             index.php
+
+
+
+init.sql
+
+
+
+
+CREATE TABLE IF NOT EXISTS domnitori (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    nume VARCHAR(100),
+    poza VARCHAR(255),
+    an_inceput INT,
+    an_sfarsit INT
+);
+
+CREATE TABLE IF NOT EXISTS log_modificari (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    domnitor_id INT,
+    actiune VARCHAR(50),
+    detalii TEXT,
+    data_modificare TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+DELIMITER //
+
+-- Proceduri Stocate
+CREATE PROCEDURE sp_AdaugaDomnitor(IN p_nume VARCHAR(100), IN p_poza VARCHAR(255), IN p_start INT, IN p_final INT)
+BEGIN
+    INSERT INTO domnitori(nume, poza, an_inceput, an_sfarsit) VALUES (p_nume, p_poza, p_start, p_final);
+END //
+
+CREATE PROCEDURE sp_EditeazaDomnitor(IN p_id INT, IN p_nume VARCHAR(100), IN p_poza VARCHAR(255), IN p_start INT, IN p_final INT)
+BEGIN
+    UPDATE domnitori SET nume = p_nume, poza = p_poza, an_inceput = p_start, an_sfarsit = p_final WHERE id = p_id;
+END //
+
+CREATE PROCEDURE sp_StergeDomnitor(IN p_id INT)
+BEGIN
+    DELETE FROM domnitori WHERE id = p_id;
+END //
+
+-- Triggere
+CREATE TRIGGER tr_DupaInsert AFTER INSERT ON domnitori
+FOR EACH ROW BEGIN
+    INSERT INTO log_modificari(domnitor_id, actiune) VALUES (NEW.id, 'ADAUGARE');
+END //
+
+CREATE TRIGGER tr_InainteUpdate BEFORE UPDATE ON domnitori
+FOR EACH ROW BEGIN
+    IF NEW.an_sfarsit < NEW.an_inceput THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Eroare: Anul de sfarsit e mai mic decat inceputul!';
+    END IF;
+END //
+
+CREATE TRIGGER tr_DupaDelete AFTER DELETE ON domnitori
+FOR EACH ROW BEGIN
+    INSERT INTO log_modificari(domnitor_id, actiune) VALUES (OLD.id, 'STERGERE');
+END //
+
+DELIMITER ;
+
+-- Date initiale
+CALL sp_AdaugaDomnitor('Stefan cel Mare', 'https://via.placeholder.com/100', 1457, 1504);
+CALL sp_AdaugaDomnitor('Mircea cel Batran', 'https://via.placeholder.com/100', 1386, 1418);
+
+
+
+
+
+
+
+
+dockerfile
+
+FROM php:8.2-apache
+RUN docker-php-ext-install pdo pdo_mysql
